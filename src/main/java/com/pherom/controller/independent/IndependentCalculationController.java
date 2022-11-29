@@ -5,6 +5,7 @@ import com.pherom.request.independent.IndependentCalculationRequest;
 import com.pherom.result.ErrorMessage;
 import com.pherom.result.Result;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Arrays;
@@ -18,54 +19,53 @@ public class IndependentCalculationController {
 
     @PostMapping(path = ENDPOINT + "/" + "calculate")
     @ResponseBody
-    public Result calculate(@RequestBody IndependentCalculationRequest calculationRequest) {
+    public ResponseEntity<Result> calculate(@RequestBody IndependentCalculationRequest calculationRequest) {
+        ResponseEntity<Result> response;
         Result result;
-        Optional<Operation> operation = Arrays.stream(Operation.values()).filter((op) -> op.getUppercaseName().equals(calculationRequest.operation().toUpperCase())).findFirst();
+        Optional<Operation> operation = Arrays.stream(Operation.values()).filter((op) -> op.getCapitalizedName().equalsIgnoreCase(calculationRequest.operation())).findFirst();
 
         if (operation.isPresent()) {
             if (calculationRequest.arguments().length < operation.get().getMinArgs()) {
-                result = onInsufficientArguments(calculationRequest.operation());
+                result = onInsufficientArguments(operation.get());
+                response = new ResponseEntity<>(result, HttpStatus.CONFLICT);
             }
             else if (calculationRequest.arguments().length > operation.get().getMaxArgs()) {
-                result = onExcessiveArguments(calculationRequest.operation());
+                result = onExcessiveArguments(operation.get());
+                response = new ResponseEntity<>(result, HttpStatus.CONFLICT);
             }
             else {
                 result = onArgumentsInBound(calculationRequest.arguments(), operation.get());
+                response = new ResponseEntity<>(result, result.errorMessage().isEmpty() ? HttpStatus.OK : HttpStatus.CONFLICT);
             }
         }
         else {
             result = onUnsupportedOperation(calculationRequest.operation());
+            response = new ResponseEntity<>(result, HttpStatus.CONFLICT);
         }
 
-        return result;
+        return response;
     }
 
-    @ResponseStatus(code = HttpStatus.CONFLICT)
     public Result onUnsupportedOperation(String attemptedOperation) {
         return new Result(OptionalInt.empty(), Optional.of(String.format(ErrorMessage.NO_SUCH_OPERATION.getFormat(), attemptedOperation)));
     }
 
-    @ResponseStatus(code = HttpStatus.CONFLICT)
-    public Result onInsufficientArguments(String attemptedOperation) {
-        return new Result(OptionalInt.empty(), Optional.of(String.format(ErrorMessage.NOT_ENOUGH_ARGUMENTS.getFormat(), attemptedOperation)));
+    public Result onInsufficientArguments(Operation operation) {
+        return new Result(OptionalInt.empty(), Optional.of(String.format(ErrorMessage.NOT_ENOUGH_ARGUMENTS.getFormat(), operation.getCapitalizedName())));
     }
 
-    @ResponseStatus(code = HttpStatus.CONFLICT)
-    public Result onExcessiveArguments(String attemptedOperation) {
-        return new Result(OptionalInt.empty(), Optional.of(String.format(ErrorMessage.TOO_MANY_ARGUMENTS.getFormat(), attemptedOperation)));
+    public Result onExcessiveArguments(Operation operation) {
+        return new Result(OptionalInt.empty(), Optional.of(String.format(ErrorMessage.TOO_MANY_ARGUMENTS.getFormat(), operation.getCapitalizedName())));
     }
 
-    @ResponseStatus(code = HttpStatus.CONFLICT)
     public Result onDivisionByZero() {
         return new Result(OptionalInt.empty(), Optional.of(ErrorMessage.DIVISION_BY_ZERO.getFormat()));
     }
 
-    @ResponseStatus(code = HttpStatus.CONFLICT)
     public Result onNegativeNumberFactorial() {
         return new Result(OptionalInt.empty(), Optional.of(ErrorMessage.FACTORIAL_OF_NEGATIVE_NUMBER.getFormat()));
     }
 
-    @ResponseStatus(code = HttpStatus.OK)
     public Result onValid(int[] arguments, Operation operation) {
         return new Result(operation.calculate(arguments), Optional.empty());
     }
