@@ -29,11 +29,15 @@ public class ResultJsonDeserializer extends StdDeserializer<Result> {
 
         JsonNode node = jsonParser.getCodec().readTree(jsonParser);
         if(node.has("result")) {
-            result = OptionalInt.of(node.get("result").asInt());
+            if (node.hasNonNull("result"))
+                result = OptionalInt.of(node.get("result").asInt());
+            else result = OptionalInt.empty();
         }
 
         if(node.has("error-message")) {
-            errorMessage = Optional.of(node.get("error-message").asText());
+            if (node.hasNonNull("error-message"))
+                errorMessage = Optional.of(node.get("error-message").asText());
+            else errorMessage = Optional.empty();
         }
 
         return new Result(result, errorMessage);

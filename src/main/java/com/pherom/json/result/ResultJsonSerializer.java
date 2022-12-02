@@ -23,8 +23,14 @@ public class ResultJsonSerializer extends StdSerializer<Result> {
         if(result.result().isPresent()) {
             jsonGenerator.writeNumberField("result", result.result().getAsInt());
         }
-        else if(result.errorMessage().isPresent()) {
+        else {
+            jsonGenerator.writeNullField("result");
+        }
+        if(result.errorMessage().isPresent()) {
             jsonGenerator.writeStringField("error-message", result.errorMessage().get());
+        }
+        else {
+            jsonGenerator.writeNullField("error-message");
         }
         jsonGenerator.writeEndObject();
     }
