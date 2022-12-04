@@ -1,4 +1,6 @@
 package com.pherom.request.independent;
 
-public record IndependentCalculationRequest(int[] arguments, String operation) {
+import java.util.List;
+
+public record IndependentCalculationRequest(List<Integer> arguments, String operation) {
 }

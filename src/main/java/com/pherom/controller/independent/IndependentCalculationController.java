@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
 
@@ -18,18 +19,17 @@ public class IndependentCalculationController {
     public static final String ENDPOINT = "/independent";
 
     @PostMapping(path = ENDPOINT + "/" + "calculate")
-    @ResponseBody
     public ResponseEntity<Result> calculate(@RequestBody IndependentCalculationRequest calculationRequest) {
         ResponseEntity<Result> response;
         Result result;
-        Optional<Operation> operation = Arrays.stream(Operation.values()).filter((op) -> op.getCapitalizedName().equalsIgnoreCase(calculationRequest.operation())).findFirst();
+        Optional<Operation> operation = Operation.getOperation(calculationRequest.operation());
 
         if (operation.isPresent()) {
-            if (calculationRequest.arguments().length < operation.get().getMinArgs()) {
+            if (calculationRequest.arguments().size() < operation.get().getMinArgs()) {
                 result = onInsufficientArguments(operation.get());
                 response = new ResponseEntity<>(result, HttpStatus.CONFLICT);
             }
-            else if (calculationRequest.arguments().length > operation.get().getMaxArgs()) {
+            else if (calculationRequest.arguments().size() > operation.get().getMaxArgs()) {
                 result = onExcessiveArguments(operation.get());
                 response = new ResponseEntity<>(result, HttpStatus.CONFLICT);
             }
@@ -66,16 +66,16 @@ public class IndependentCalculationController {
         return new Result(OptionalInt.empty(), Optional.of(ErrorMessage.FACTORIAL_OF_NEGATIVE_NUMBER.getFormat()));
     }
 
-    public Result onValid(int[] arguments, Operation operation) {
+    public Result onValid(List<Integer> arguments, Operation operation) {
         return new Result(operation.calculate(arguments), Optional.empty());
     }
 
-    public Result onArgumentsInBound(int[] arguments, Operation operation) {
+    public Result onArgumentsInBound(List<Integer> arguments, Operation operation) {
         Result result;
-        if (operation == Operation.DIVISION && arguments[1] == 0) {
+        if (operation == Operation.DIVISION && arguments.get(1) == 0) {
             result = onDivisionByZero();
         }
-        else if (operation == Operation.FACTORIAL && arguments[0] < 0) {
+        else if (operation == Operation.FACTORIAL && arguments.get(0) < 0) {
             result = onNegativeNumberFactorial();
         }
         else {
