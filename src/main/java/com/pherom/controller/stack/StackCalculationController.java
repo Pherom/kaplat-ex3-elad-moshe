@@ -47,8 +47,18 @@ public class StackCalculationController {
             else {
                 List<Integer> arguments = new ArrayList<>();
                 IntStream.range(0, minArgs).forEach(i -> arguments.add(stack.pop()));
-                result = new Result(oper.get().calculate(arguments), Optional.empty());
-                response = new ResponseEntity<>(result, HttpStatus.OK);
+                if (oper.get() == Operation.DIVISION && arguments.get(1) == 0) {
+                    result = new Result(OptionalInt.empty(), Optional.of(ErrorMessage.DIVISION_BY_ZERO.getFormat()));
+                    response = new ResponseEntity<>(result, HttpStatus.CONFLICT);
+                }
+                else if (oper.get() == Operation.FACTORIAL && arguments.get(0) < 0) {
+                    result = new Result(OptionalInt.empty(), Optional.of(ErrorMessage.FACTORIAL_OF_NEGATIVE_NUMBER.getFormat()));
+                    response = new ResponseEntity<>(result, HttpStatus.CONFLICT);
+                }
+                else {
+                    result = new Result(oper.get().calculate(arguments), Optional.empty());
+                    response = new ResponseEntity<>(result, HttpStatus.OK);
+                }
             }
         }
         else {
